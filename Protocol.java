@@ -61,6 +61,12 @@ public class Protocol {
 	 * See coursework specification for full details.	
 	 */
 	public void sendMetadata()   { 
+		BufferedReader reader = new BufferedReader(new FileReader(data.csv));
+		String line;
+		while((line = bufferedReader.readline()) != null){
+			fileTotalReadings++;
+		}
+		System.out.println(fileTotalReadings)
 		System.exit(0);
 	} 
 
