@@ -1,6 +1,6 @@
 /*
  * Replace the following string of 0s with your student number
- * 000000000
+ * 240185299
  */
 import java.io.File;
 import java.net.DatagramSocket;
@@ -70,6 +70,10 @@ public class Protocol {
 			while((line = reader.readLine()) != null) {
 				fileTotalReadings++;
 			}
+			String payloadString = new String(fileTotalReadings+","+outputFileName+","+maxPatchSize);
+			Segment metaSeg = new Segment(0, SegmentType.Meta, payloadString, payloadString.length());  
+			
+			reader.close();
 		}
 		catch (IOException e) {
 			System.out.println("Error: " + e);
