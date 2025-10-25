@@ -7,6 +7,9 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class Protocol {
 
@@ -61,12 +64,16 @@ public class Protocol {
 	 * See coursework specification for full details.	
 	 */
 	public void sendMetadata()   { 
-		BufferedReader reader = new BufferedReader(new FileReader(data.csv));
-		String line;
-		while((line = bufferedReader.readline()) != null){
-			fileTotalReadings++;
+		try{
+			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+			String line;
+			while((line = reader.readLine()) != null) {
+				fileTotalReadings++;
+			}
 		}
-		System.out.println(fileTotalReadings)
+		catch (IOException e) {
+			System.out.println("Error: " + e);
+		}
 		System.exit(0);
 	} 
 
