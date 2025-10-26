@@ -10,6 +10,9 @@ import java.net.UnknownHostException;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.net.DatagramPacket;
 
 public class Protocol {
 
@@ -72,13 +75,22 @@ public class Protocol {
 			}
 			String payloadString = new String(fileTotalReadings+","+outputFileName+","+maxPatchSize);
 			Segment metaSeg = new Segment(0, SegmentType.Meta, payloadString, payloadString.length());  
+
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			ObjectOutputStream os = new ObjectOutputStream(outputStream);
+			os.writeObject(metaSeg);
+			os.flush();
+			byte[] data = outputStream.toByteArray();
+			DatagramPacket packet = new DatagramPacket(data, data.length, instance.ipAddress, instance.portNumber);
+			instance.socket.send(packet);
+
+			System.out.println("CLIENT:META[SEQ#" + metaSeg.getSeqNum() + "](Number of readings:" + instance.getFileTotalReadings() + ",filename:" + instance.getOutputFileName()  + ",patchSize:" + instance.getMaxPatchSize() + ")");
 			
 			reader.close();
 		}
 		catch (IOException e) {
 			System.out.println("Error: " + e);
 		}
-		System.exit(0);
 	} 
 
 
