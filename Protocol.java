@@ -106,7 +106,12 @@ public class Protocol {
 			if (instance.maxPatchSize > 1) {
 				for (int i = 0; i < fileTotalReadings; i+=instance.maxPatchSize) {
 					for (int j = 0; j < instance.maxPatchSize; j++) {
-					payLoadString += reader.readLine() + ";";
+						String line = reader.readLine();
+						if (line != null) {
+							payLoadString += line + ";";
+						} else {
+							break;
+						}
 					}
 					payLoadString = payLoadString.substring(0, payLoadString.length() - 1);
 					if (sqNo == 0) {
