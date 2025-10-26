@@ -99,8 +99,42 @@ public class Protocol {
 	 * See coursework specification for full details.
 	 */
 	public void readAndSend() { 
-		System.exit(0);
+		String payLoadString = "";
+		int sqNo = 0;
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+			if (instance.maxPatchSize > 1) {
+				for (int i = 0; i < fileTotalReadings; i+=instance.maxPatchSize) {
+					for (int j = 0; j < instance.maxPatchSize; j++) {
+					payLoadString += reader.readLine() + ";";
+					}
+					payLoadString = payLoadString.substring(0, payLoadString.length() - 1);
+					if (sqNo == 0) {
+						sqNo = 1;
+						dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
+					} else {
+						sqNo = 0;
+						dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
+					}
+				}
+			} else {
+				for (int i = 0; i < fileTotalReadings; i++) {
+					payLoadString = reader.readLine();
+					if (sqNo == 0) {
+						sqNo = 1;
+						dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
+					} else {
+						sqNo = 0;
+						dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
+					}
+				}
+			}
+			reader.close();
+		} catch (IOException e) {
+			System.out.println("Error: " + e);
+		}
 	}
+	
 
 	/* 
 	 * This method receives the current Ack segment (ackSeg) from the server 
