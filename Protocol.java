@@ -112,9 +112,23 @@ public class Protocol {
 					if (sqNo == 0) {
 						sqNo = 1;
 						dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
+						ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+						ObjectOutputStream os = new ObjectOutputStream(outputStream);
+						os.writeObject(dataSeg);
+						os.flush();
+						byte[] data = outputStream.toByteArray();
+						DatagramPacket packet = new DatagramPacket(data, data.length, instance.ipAddress, instance.portNumber);
+						instance.socket.send(packet);
 					} else {
 						sqNo = 0;
 						dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
+						ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+						ObjectOutputStream os = new ObjectOutputStream(outputStream);
+						os.writeObject(dataSeg);
+						os.flush();
+						byte[] data = outputStream.toByteArray();
+						DatagramPacket packet = new DatagramPacket(data, data.length, instance.ipAddress, instance.portNumber);
+						instance.socket.send(packet);
 					}
 				}
 			} else {
@@ -123,9 +137,23 @@ public class Protocol {
 					if (sqNo == 0) {
 						sqNo = 1;
 						dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
+						ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+						ObjectOutputStream os = new ObjectOutputStream(outputStream);
+						os.writeObject(dataSeg);
+						os.flush();
+						byte[] data = outputStream.toByteArray();
+						DatagramPacket packet = new DatagramPacket(data, data.length, instance.ipAddress, instance.portNumber);
+						instance.socket.send(packet);
 					} else {
 						sqNo = 0;
 						dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
+						ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+						ObjectOutputStream os = new ObjectOutputStream(outputStream);
+						os.writeObject(dataSeg);
+						os.flush();
+						byte[] data = outputStream.toByteArray();
+						DatagramPacket packet = new DatagramPacket(data, data.length, instance.ipAddress, instance.portNumber);
+						instance.socket.send(packet);
 					}
 				}
 			}
