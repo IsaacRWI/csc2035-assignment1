@@ -98,6 +98,8 @@ public class Protocol {
 	 * This method read and send the next data segment (dataSeg) to the server. 
 	 * See coursework specification for full details.
 	 */
+
+	 /* 
 	public void readAndSend() { 
 		String payLoadString = "";
 		int sqNo = 0;
@@ -170,6 +172,11 @@ public class Protocol {
 		} catch (IOException e) {
 			System.out.println("Error: " + e);
 		}
+	}
+	*/
+
+	public void readAndSend() {
+		
 	}
 	
 
