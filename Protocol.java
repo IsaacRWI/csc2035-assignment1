@@ -124,6 +124,7 @@ public class Protocol {
 						byte[] data = outputStream.toByteArray();
 						DatagramPacket packet = new DatagramPacket(data, data.length, instance.ipAddress, instance.portNumber);
 						instance.socket.send(packet);
+						payLoadString = "";
 					} else {
 						sqNo = 0;
 						dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
@@ -134,6 +135,7 @@ public class Protocol {
 						byte[] data = outputStream.toByteArray();
 						DatagramPacket packet = new DatagramPacket(data, data.length, instance.ipAddress, instance.portNumber);
 						instance.socket.send(packet);
+						payLoadString = "";
 					}
 				}
 			} else {
@@ -149,6 +151,7 @@ public class Protocol {
 						byte[] data = outputStream.toByteArray();
 						DatagramPacket packet = new DatagramPacket(data, data.length, instance.ipAddress, instance.portNumber);
 						instance.socket.send(packet);
+						payLoadString = "";
 					} else {
 						sqNo = 0;
 						dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
@@ -159,6 +162,7 @@ public class Protocol {
 						byte[] data = outputStream.toByteArray();
 						DatagramPacket packet = new DatagramPacket(data, data.length, instance.ipAddress, instance.portNumber);
 						instance.socket.send(packet);
+						payLoadString = "";
 					}
 				}
 			}
