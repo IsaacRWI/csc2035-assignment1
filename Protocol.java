@@ -211,7 +211,13 @@ public class Protocol {
 				}
 				payLoadString = payLoadString.substring(0, payLoadString.length() - 1);
 				sentReadings += maxPatchSize;
-				if (sqNo == 0) {
+			} else {
+				for (int i = 0; i < fileTotalReadings; i++) {
+					payLoadString = reader.readLine();
+					sentReadings += 1;
+				}
+			}
+			if (sqNo == 0) {
 					sqNo = 1;
 				} else {
 					sqNo = 0;
@@ -220,22 +226,6 @@ public class Protocol {
 				sendSegment(dataSeg);
 				payLoadString = "";
 				reader.close();
-			} else {
-				for (int i = 0; i < fileTotalReadings; i++) {
-					payLoadString = reader.readLine();
-					sentReadings += 1;
-					if (sqNo == 0) {
-						sqNo = 1;
-					} else {
-						sqNo = 0;
-					}
-					dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
-					sendSegment(dataSeg);
-					payLoadString = "";
-				}
-			}
-
-
 		} catch (IOException e) {
 			System.out.println("Error: " + e);
 		}
