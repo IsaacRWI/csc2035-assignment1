@@ -211,17 +211,14 @@ public class Protocol {
 				}
 				payLoadString = payLoadString.substring(0, payLoadString.length() - 1);
 				sentReadings += maxPatchSize;
+				sqNo = (sentReadings / maxPatchSize) % 2;
 			} else {
 				for (int i = 0; i < fileTotalReadings; i++) {
 					payLoadString = reader.readLine();
 					sentReadings += 1;
+					sqNo = sentReadings % 2;
 				}
 			}
-			if (sqNo == 0) {
-					sqNo = 1;
-				} else {
-					sqNo = 0;
-				}
 				dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
 				sendSegment(dataSeg);
 				payLoadString = "";
