@@ -237,7 +237,7 @@ public class Protocol {
 	 * See coursework specification for full details.
 	 */
 	public boolean receiveAck() { 
-		Segment clientAckData = new Segment(); 
+		Segment ackSeg = new Segment(); 
 		byte[] buf = new byte[Protocol.MAX_Segment_SIZE]; //prepare the buffer to have the max segment size
 		try{
 			DatagramPacket incomingPacket = new DatagramPacket(buf, buf.length);
@@ -246,11 +246,11 @@ public class Protocol {
 			ByteArrayInputStream in = new ByteArrayInputStream(data);
 			ObjectInputStream is = new ObjectInputStream(in);
 
-			clientAckData = (Segment) is.readObject(); 
+			ackSeg = (Segment) is.readObject(); 
 
-			if (clientAckData.getType() == SegmentType.Ack) {
-				if (clientAckData.getSeqNum() == instance.dataSeg.getSeqNum()) {
-					System.out.println("CLIENT:RECEIVE:ACK[SEQ#" + clientAckData.getSeqNum() + "]");
+			if (ackSeg.getType() == SegmentType.Ack) {
+				if (ackSeg.getSeqNum() == instance.dataSeg.getSeqNum()) {
+					System.out.println("CLIENT:RECEIVE:ACK[SEQ#" + ackSeg.getSeqNum() + "]");
 					System.out.println("**********************************************************************");
 					instance.sentReadings += instance.maxPatchSize;
 					if (instance.sentReadings >= instance.fileTotalReadings) {
@@ -261,7 +261,7 @@ public class Protocol {
 						return true;
 					}
 				} else {
-					System.out.println("CLIENT:RECEIVE:ACK[SEQ#" + clientAckData.getSeqNum() + "] OUT OF ORDER");
+					System.out.println("CLIENT:RECEIVE:ACK[SEQ#" + ackSeg.getSeqNum() + "] OUT OF ORDER");
 					return false;
 				}
 			}
@@ -279,6 +279,9 @@ public class Protocol {
 	 * See coursework specification for full details.
 	 */
 	public void startTimeoutWithRetransmission()   {  
+		while (instance.receiveAck() == false) {
+			
+		}
 		System.exit(0);
 	}
 
