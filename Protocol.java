@@ -251,9 +251,10 @@ public class Protocol {
 			if (clientAckData.getType() == SegmentType.Ack) {
 				if (clientAckData.getSeqNum() == instance.dataSeg.getSeqNum()) {
 					System.out.println("CLIENT:RECEIVE:ACK[SEQ#" + clientAckData.getSeqNum() + "]");
+					System.out.println("**********************************************************************");
 					instance.sentReadings += instance.maxPatchSize;
 					if (instance.sentReadings >= instance.fileTotalReadings) {
-						System.out.println("Total segments sent:" + instance.totalSegments);
+						System.out.println("Total segments:" + instance.totalSegments);
 						System.exit(0);
 						return true;
 					} else {
