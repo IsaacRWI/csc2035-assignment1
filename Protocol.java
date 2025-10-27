@@ -5,11 +5,14 @@
 import java.io.File;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
@@ -210,15 +213,17 @@ public class Protocol {
 					}
 				}
 				payLoadString = payLoadString.substring(0, payLoadString.length() - 1);
-				sentReadings += maxPatchSize;
-				sqNo = (sentReadings / maxPatchSize) % 2;
+				// sentReadings += maxPatchSize;
+				sqNo = ((sentReadings / maxPatchSize) + 1) % 2;
 			} else {				
 				payLoadString = reader.readLine();
-				sentReadings += 1;
-				sqNo = sentReadings % 2;
-				}
+				// sentReadings += 1;
+				sqNo = (sentReadings + 1) % 2;
+			}
 				dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
 				sendSegment(dataSeg);
+				totalSegments++;
+				System.out.println("CLIENT:Send:DATA[SEQ#" + sqNo + "](size:" + payLoadString.length() + ",crc:" + dataSeg.calculateChecksum() +",content:" + payLoadString +")");
 				payLoadString = "";
 				reader.close();
 		} catch (IOException e) {
@@ -232,7 +237,39 @@ public class Protocol {
 	 * See coursework specification for full details.
 	 */
 	public boolean receiveAck() { 
-		System.exit(0);
+		Segment clientAckData = new Segment(); 
+		byte[] buf = new byte[Protocol.MAX_Segment_SIZE]; //prepare the buffer to have the max segment size
+		try{
+			DatagramPacket incomingPacket = new DatagramPacket(buf, buf.length);
+			instance.socket.receive(incomingPacket);
+			byte[] data = incomingPacket.getData();
+			ByteArrayInputStream in = new ByteArrayInputStream(data);
+			ObjectInputStream is = new ObjectInputStream(in);
+
+			clientAckData = (Segment) is.readObject(); 
+
+			if (clientAckData.getType() == SegmentType.Ack) {
+				if (clientAckData.getSeqNum() == instance.dataSeg.getSeqNum()) {
+					System.out.println("CLIENT:RECEIVE:ACK[SEQ#" + clientAckData.getSeqNum() + "]");
+					instance.sentReadings += instance.maxPatchSize;
+					if (instance.sentReadings >= instance.fileTotalReadings) {
+						System.out.println("Total segments sent:" + instance.totalSegments);
+						System.exit(0);
+						return true;
+					} else {
+						return true;
+					}
+				} else {
+					System.out.println("CLIENT:RECEIVE:ACK[SEQ#" + clientAckData.getSeqNum() + "] OUT OF ORDER");
+					return false;
+				}
+			}
+		} catch (IOException e) {
+			System.out.println("Error: " + e);
+		} catch (ClassNotFoundException e) {
+			System.out.println("Error: " + e);
+		}
+		// System.exit(0);
 		return false;
 	}
 
