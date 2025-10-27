@@ -93,6 +93,20 @@ public class Protocol {
 		}
 	} 
 
+	public void sendSegment(Segment segment) {
+		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			ObjectOutputStream os = new ObjectOutputStream(outputStream);
+			os.writeObject(segment);
+			os.flush();
+			byte[] data = outputStream.toByteArray();
+			DatagramPacket packet = new DatagramPacket(data, data.length, instance.ipAddress, instance.portNumber);
+			instance.socket.send(packet);
+		} catch (IOException e) {
+			System.out.println("Error: " + e);
+		}
+	}
+
 
 	/* 
 	 * This method read and send the next data segment (dataSeg) to the server. 
