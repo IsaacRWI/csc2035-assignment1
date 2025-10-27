@@ -224,9 +224,8 @@ public class Protocol {
 									") reached for seq#" + instance.dataSeg.getSeqNum() + ". Terminating.");
 					System.exit(1);
 				}
-				System.out.println("TIMEOUT: no ACK for seq#" + instance.dataSeg.getSeqNum() +
-								" after " + instance.timeout + " ms; retransmitting (attempt " +
-								instance.currRetry + "/" + instance.maxRetries + ")");
+				System.out.println("CLIENT: TIMEOUT for SEQ#" + instance.dataSeg.getSeqNum() + ", Current Retry: " + instance.currRetry + "/" + instance.maxRetries + "");
+				System.out.println("CLIENT:Send:DATA[SEQ#" + instance.dataSeg.getSeqNum() + "](size:" + instance.dataSeg.getPayLoad().length() + ",crc:" + instance.dataSeg.calculateChecksum() +",content:" + instance.dataSeg.getPayLoad() +")");
 				sendSegment(instance.dataSeg);
 				instance.totalSegments += 1;
 			}
