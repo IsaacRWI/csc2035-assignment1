@@ -6,6 +6,7 @@ import java.io.File;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.SocketTimeoutException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.io.BufferedReader;
@@ -236,7 +237,7 @@ public class Protocol {
 	 * This method receives the current Ack segment (ackSeg) from the server 
 	 * See coursework specification for full details.
 	 */
-	public boolean receiveAck() { 
+	public boolean receiveAck() throws SocketTimeoutException { 
 		Segment ackSeg = new Segment(); 
 		byte[] buf = new byte[Protocol.MAX_Segment_SIZE]; //prepare the buffer to have the max segment size
 		try{
@@ -252,7 +253,11 @@ public class Protocol {
 				if (ackSeg.getSeqNum() == instance.dataSeg.getSeqNum()) {
 					System.out.println("CLIENT:RECEIVE:ACK[SEQ#" + ackSeg.getSeqNum() + "]");
 					System.out.println("**********************************************************************");
-					instance.sentReadings += instance.maxPatchSize;
+					// instance.sentReadings += instance.dataSeg.getPayLoad().split(";").length;
+					int n = instance.dataSeg.getPayLoad() == null || instance.dataSeg.getPayLoad().isEmpty() ? 0 : instance.dataSeg.getPayLoad().split(";").length;
+					instance.sentReadings += n;
+					// System.out.println("sentReadings: " + instance.sentReadings);
+					instance.ackSeg = ackSeg;
 					if (instance.sentReadings >= instance.fileTotalReadings) {
 						System.out.println("Total segments:" + instance.totalSegments);
 						System.exit(0);
@@ -265,9 +270,11 @@ public class Protocol {
 					return false;
 				}
 			}
-		} catch (IOException e) {
-			System.out.println("Error: " + e);
+		} catch (SocketTimeoutException ste)  {
+			throw ste;
 		} catch (ClassNotFoundException e) {
+			System.out.println("Error: " + e);
+		} catch (IOException e) {
 			System.out.println("Error: " + e);
 		}
 		// System.exit(0);
@@ -278,13 +285,34 @@ public class Protocol {
 	 * This method starts a timer and does re-transmission of the Data segment 
 	 * See coursework specification for full details.
 	 */
-	public void startTimeoutWithRetransmission()   {  
-		while (instance.receiveAck() == false) {
-			
+	public void startTimeoutWithRetransmission() {
+		try{
+			instance.socket.setSoTimeout(instance.timeout);
+		}catch (SocketException e) {
+			System.out.println("Error: " + e);
 		}
-		System.exit(0);
+		while (true) {
+			try {
+				boolean matched = receiveAck();
+				if (matched) {
+					instance.currRetry = 0;
+					break;
+				}
+			} catch (SocketTimeoutException ste) {
+				instance.currRetry += 1;
+				if (instance.currRetry > instance.maxRetries) {
+					System.out.println("ERROR: maximum retransmissions (" + instance.maxRetries +
+									") reached for seq#" + instance.dataSeg.getSeqNum() + ". Terminating.");
+					System.exit(1);
+				}
+				System.out.println("TIMEOUT: no ACK for seq#" + instance.dataSeg.getSeqNum() +
+								" after " + instance.timeout + " ms; retransmitting (attempt " +
+								instance.currRetry + "/" + instance.maxRetries + ")");
+				sendSegment(instance.dataSeg);
+				instance.totalSegments += 1;
+			}
+		}
 	}
-
 
 	/* 
 	 * This method is used by the server to receive the Data segment in Lost Ack mode
