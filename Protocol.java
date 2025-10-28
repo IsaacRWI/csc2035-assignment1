@@ -5,7 +5,6 @@
 import java.io.File;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -20,9 +19,6 @@ import java.net.DatagramPacket;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-
 
 public class Protocol {
 
@@ -230,7 +226,7 @@ public class Protocol {
 									") reached for seq#" + instance.dataSeg.getSeqNum() + ". Terminating.");
 					System.exit(1);
 				}
-				System.out.println("CLIENT: TIMEOUT for SEQ#" + instance.dataSeg.getSeqNum() + ", Current Retry: " + instance.currRetry + "/" + instance.maxRetries + "");
+				System.out.println("CLIENT:TIMEOUT for SEQ#" + instance.dataSeg.getSeqNum() + ", Current Retry: " + instance.currRetry + "/" + instance.maxRetries + "");
 				System.out.println("CLIENT:Send:DATA[SEQ#" + instance.dataSeg.getSeqNum() + "](size:" + instance.dataSeg.getPayLoad().length() + ",crc:" + instance.dataSeg.calculateChecksum() +",content:" + instance.dataSeg.getPayLoad() +")");
 				sendSegment(instance.dataSeg);
 				instance.totalSegments += 1;
@@ -317,6 +313,7 @@ public class Protocol {
 						Server.sendAck(serverSocket, iPAddress, port, serverDataSeg.getSeqNum());
 					} else {
 						System.out.println("SERVER: Simulating ACK loss. ACK[SEQ#" + serverDataSeg.getSeqNum() + "] is lost.");
+						System.out.println("===============================================");
 						System.out.println("===============================================");
 					}
 					
