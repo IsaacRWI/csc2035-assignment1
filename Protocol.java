@@ -250,8 +250,9 @@ public class Protocol {
 
 		//track the number of the correctly received readings
 		int readingCount= 0;
-		
-		int totalReceived = 0;
+
+		int usefulBytes = 0;
+		int totalBytes = 0;
 
 		int sqNo = 0;
 
@@ -293,12 +294,13 @@ public class Protocol {
 
 				if (serverDataSeg.getSeqNum() != sqNo) {
 					System.out.println("SERVER: Duplicate DATA Detected");
-					System.out.println("*************************** "); 
-					totalReceived += lines.length;
+					System.out.println("****************************************************"); 
+					totalBytes += serverDataSeg.getSize();
 				} else {
-					// write the payload of the data segment to the temporary list 
 					readingCount += lines.length;
-					System.out.println("writing payload to list.......................................................");
+					usefulBytes += serverDataSeg.getSize();
+					totalBytes += serverDataSeg.getSize();
+					// System.out.println("writing payload to list.......................................................");
 					receivedLines.add("Segment ["+ serverDataSeg.getSeqNum() + "] has "+ lines.length + " Readings");
 					receivedLines.addAll(Arrays.asList(lines));
 					receivedLines.add("");
@@ -307,9 +309,9 @@ public class Protocol {
 
 				if (!isLost(loss)) {
 					Server.sendAck(serverSocket, iPAddress, port, serverDataSeg.getSeqNum());
-					//update the number of correctly received readings
 				} else {
 					System.out.println("SERVER: Simulating ACK loss. ACK[SEQ#" + serverDataSeg.getSeqNum() + "] is lost.");
+					System.out.println("===============================================");
 				}
 				
 				
@@ -323,12 +325,14 @@ public class Protocol {
 			
 			//if all readings are received, then write the readings to the file
 			if (Protocol.instance.getOutputFileName() != null && readingCount >= Protocol.instance.getFileTotalReadings()) {
-				System.out.println("All readings received. Writing to file..."); 
+				// System.out.println("All readings received. Writing to file..."); 
 				Server.writeReadingsToFile(receivedLines, Protocol.instance.getOutputFileName());
 				break;
 			}
 		}
-
+		System.out.println("Total useful bytes received: " + usefulBytes);
+		System.out.println("Total bytes received: " + totalBytes);
+		System.out.println("Efficiency: " + (usefulBytes * 100 / totalBytes) + "%");
 		serverSocket.close();
 	}
 
