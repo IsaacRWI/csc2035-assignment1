@@ -256,77 +256,87 @@ public class Protocol {
 
 		int sqNo = 0;
 
+		try{
+			serverSocket.setSoTimeout(2000);
+		}catch (SocketException e) {
+			System.out.println("Error: " + e);
+		}
+
 		// while still receiving Data segments  
 		while (true) {
+			try{
+				DatagramPacket incomingPacket = new DatagramPacket(buf, buf.length);
+				serverSocket.receive(incomingPacket);// receive from the client  
 
-			DatagramPacket incomingPacket = new DatagramPacket(buf, buf.length);
-			serverSocket.receive(incomingPacket);// receive from the client  
+				sqNo = ((readingCount / maxPatchSize) + 1) % 2;
+				System.out.println("Expected SEQ#:" + sqNo);
+			
+				Segment serverDataSeg = new Segment(); 
+				byte[] data = incomingPacket.getData();
+				ByteArrayInputStream in = new ByteArrayInputStream(data);
+				ObjectInputStream is = new ObjectInputStream(in);
 
-			sqNo = ((readingCount / maxPatchSize) + 1) % 2;
-			System.out.println("Expected SEQ#:" + sqNo);
-		
-			Segment serverDataSeg = new Segment(); 
-			byte[] data = incomingPacket.getData();
-			ByteArrayInputStream in = new ByteArrayInputStream(data);
-			ObjectInputStream is = new ObjectInputStream(in);
-
-			// read and then print the content of the segment
-			try {
-				serverDataSeg = (Segment) is.readObject(); 
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
+				// read and then print the content of the segment
+				try {
+					serverDataSeg = (Segment) is.readObject(); 
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				}
 
 
-			System.out.println("SERVER: Receive: DATA [SEQ#"+ serverDataSeg.getSeqNum()+ "]("+"size:"+serverDataSeg.getSize()+", crc: "+serverDataSeg.getChecksum()+
-					", content:"  + serverDataSeg.getPayLoad()+")");
+				System.out.println("SERVER: Receive: DATA [SEQ#"+ serverDataSeg.getSeqNum()+ "]("+"size:"+serverDataSeg.getSize()+", crc: "+serverDataSeg.getChecksum()+
+						", content:"  + serverDataSeg.getPayLoad()+")");
 
-			// calculate the checksum
-			long x = serverDataSeg.calculateChecksum();
+				// calculate the checksum
+				long x = serverDataSeg.calculateChecksum();
 
-			// if the calculated checksum is same as that of received checksum then send the corresponding ack
-			if (serverDataSeg.getType() == SegmentType.Data && x == serverDataSeg.getChecksum()) {
-				System.out.println("SERVER: Calculated checksum is " + x + "  VALID");
-				InetAddress iPAddress = incomingPacket.getAddress();
-				int port = incomingPacket.getPort();
+				// if the calculated checksum is same as that of received checksum then send the corresponding ack
+				if (serverDataSeg.getType() == SegmentType.Data && x == serverDataSeg.getChecksum()) {
+					System.out.println("SERVER: Calculated checksum is " + x + "  VALID");
+					InetAddress iPAddress = incomingPacket.getAddress();
+					int port = incomingPacket.getPort();
 
-				String[] lines = serverDataSeg.getPayLoad().split(";");
+					String[] lines = serverDataSeg.getPayLoad().split(";");
 
-				if (serverDataSeg.getSeqNum() != sqNo) {
-					System.out.println("SERVER: Duplicate DATA Detected");
-					System.out.println("****************************************************"); 
-					totalBytes += serverDataSeg.getSize();
-				} else {
-					readingCount += lines.length;
-					usefulBytes += serverDataSeg.getSize();
-					totalBytes += serverDataSeg.getSize();
-					// System.out.println("writing payload to list.......................................................");
-					receivedLines.add("Segment ["+ serverDataSeg.getSeqNum() + "] has "+ lines.length + " Readings");
-					receivedLines.addAll(Arrays.asList(lines));
-					receivedLines.add("");
+					if (serverDataSeg.getSeqNum() != sqNo) {
+						System.out.println("SERVER: Duplicate DATA Detected");
+						System.out.println("****************************************************"); 
+						totalBytes += serverDataSeg.getSize();
+					} else {
+						readingCount += lines.length;
+						usefulBytes += serverDataSeg.getSize();
+						totalBytes += serverDataSeg.getSize();
+						// System.out.println("writing payload to list.......................................................");
+						receivedLines.add("Segment ["+ serverDataSeg.getSeqNum() + "] has "+ lines.length + " Readings");
+						receivedLines.addAll(Arrays.asList(lines));
+						receivedLines.add("");
+					}
+					
+
+					if (!isLost(loss)) {
+						Server.sendAck(serverSocket, iPAddress, port, serverDataSeg.getSeqNum());
+					} else {
+						System.out.println("SERVER: Simulating ACK loss. ACK[SEQ#" + serverDataSeg.getSeqNum() + "] is lost.");
+						System.out.println("===============================================");
+					}
+					
+					
+				
+				// if the calculated checksum is not the same as that of received checksum, then do not send any ack
+				} else if (serverDataSeg.getType() == SegmentType.Data&& x != serverDataSeg.getChecksum()) {
+					System.out.println("SERVER: Calculated checksum is " + x + "  INVALID");
+					System.out.println("SERVER: Not sending any ACK ");
+					System.out.println("*************************** "); 
 				}
 				
-
-				if (!isLost(loss)) {
-					Server.sendAck(serverSocket, iPAddress, port, serverDataSeg.getSeqNum());
-				} else {
-					System.out.println("SERVER: Simulating ACK loss. ACK[SEQ#" + serverDataSeg.getSeqNum() + "] is lost.");
-					System.out.println("===============================================");
+				//if all readings are received, then write the readings to the file
+				if (Protocol.instance.getOutputFileName() != null && readingCount >= Protocol.instance.getFileTotalReadings()) {
+					// System.out.println("All readings received. Writing to file..."); 
+					Server.writeReadingsToFile(receivedLines, Protocol.instance.getOutputFileName());
+					break;
 				}
-				
-				
-			
-			// if the calculated checksum is not the same as that of received checksum, then do not send any ack
-			} else if (serverDataSeg.getType() == SegmentType.Data&& x != serverDataSeg.getChecksum()) {
-				System.out.println("SERVER: Calculated checksum is " + x + "  INVALID");
-				System.out.println("SERVER: Not sending any ACK ");
-				System.out.println("*************************** "); 
-			}
-			
-			//if all readings are received, then write the readings to the file
-			if (Protocol.instance.getOutputFileName() != null && readingCount >= Protocol.instance.getFileTotalReadings()) {
-				// System.out.println("All readings received. Writing to file..."); 
-				Server.writeReadingsToFile(receivedLines, Protocol.instance.getOutputFileName());
+			} catch (SocketTimeoutException ste) {
+				System.out.println("SERVER: Timout reached. EXITING");
 				break;
 			}
 		}
