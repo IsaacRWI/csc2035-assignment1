@@ -82,15 +82,6 @@ public class Protocol {
 			String payloadString = new String(fileTotalReadings+","+outputFileName+","+maxPatchSize);
 			Segment metaSeg = new Segment(0, SegmentType.Meta, payloadString, payloadString.length());  
 
-			/* ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			ObjectOutputStream os = new ObjectOutputStream(outputStream);
-			os.writeObject(metaSeg);
-			os.flush();
-			byte[] data = outputStream.toByteArray();
-			DatagramPacket packet = new DatagramPacket(data, data.length, instance.ipAddress, instance.portNumber);
-			instance.socket.send(packet);
-			*/
-
 			sendSegment(metaSeg);
 
 			System.out.println("CLIENT:META[SEQ#" + metaSeg.getSeqNum() + "](Number of readings:" + instance.getFileTotalReadings() + ",filename:" + instance.getOutputFileName()  + ",patchSize:" + instance.getMaxPatchSize() + ")");
