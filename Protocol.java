@@ -233,6 +233,7 @@ public class Protocol {
 	 * See coursework specification for full details.
 	 */
 	public void receiveWithAckLoss(DatagramSocket serverSocket, float loss) throws IOException{
+		// ripped from receiveNormal in Server.java
 		byte[] buf = new byte[Protocol.MAX_Segment_SIZE];
 		
 		//creat a temporary list to store the readings
@@ -241,13 +242,15 @@ public class Protocol {
 		//track the number of the correctly received readings
 		int readingCount= 0;
 
+		// for efficiency percetage later
 		int usefulBytes = 0;
 		int totalBytes = 0;
 
+		// initialises server side sequence number
 		int sqNo = 0;
 
 		try{
-			serverSocket.setSoTimeout(2000);
+			serverSocket.setSoTimeout(2000);  // set timeout if no more data segments are sent from the client in case of client timeout
 		}catch (SocketException e) {
 			System.out.println("Error: " + e);
 		}
@@ -288,24 +291,25 @@ public class Protocol {
 
 					String[] lines = serverDataSeg.getPayLoad().split(";");
 
-					if (serverDataSeg.getSeqNum() != sqNo) {
+					// bit of code to check if the segment received is a new segment or not
+					if (serverDataSeg.getSeqNum() != sqNo) {  // received segment not the expected one  ie client didnt receive ack and resended previous data segment
 						System.out.println("SERVER: Duplicate DATA Detected");
 						System.out.println("****************************************************"); 
-						totalBytes += serverDataSeg.getSize();
-					} else {
-						readingCount += lines.length;
-						usefulBytes += serverDataSeg.getSize();
+						totalBytes += serverDataSeg.getSize();  // increment totalBytes by data segment bytes
+					} else {  // new segment with sequence number matching expected sequence number
+						readingCount += lines.length;  // increment readingCount by the number of readings in the segment
+						usefulBytes += serverDataSeg.getSize();  // increment both useful and total bytes
 						totalBytes += serverDataSeg.getSize();
 						// System.out.println("writing payload to list.......................................................");
-						receivedLines.add("Segment ["+ serverDataSeg.getSeqNum() + "] has "+ lines.length + " Readings");
+						receivedLines.add("Segment ["+ serverDataSeg.getSeqNum() + "] has "+ lines.length + " Readings");  // adds reading to arraylist to be written to output file
 						receivedLines.addAll(Arrays.asList(lines));
 						receivedLines.add("");
 					}
 					
-
-					if (!isLost(loss)) {
-						Server.sendAck(serverSocket, iPAddress, port, serverDataSeg.getSeqNum());
-					} else {
+					// code to simulate random ack package losses
+					if (!isLost(loss)) {  // if isLost returns False
+						Server.sendAck(serverSocket, iPAddress, port, serverDataSeg.getSeqNum());  // sends ack as normal using Server.java method
+					} else {  // isLost return True
 						System.out.println("SERVER: Simulating ACK loss. ACK[SEQ#" + serverDataSeg.getSeqNum() + "] is lost.");
 						System.out.println("===============================================");
 						System.out.println("===============================================");
@@ -326,11 +330,12 @@ public class Protocol {
 					Server.writeReadingsToFile(receivedLines, Protocol.instance.getOutputFileName());
 					break;
 				}
-			} catch (SocketTimeoutException ste) {
-				System.out.println("SERVER: Timout reached. EXITING");
+			} catch (SocketTimeoutException ste) {  // breaks out of loop and terminates if no data segment is received from the client in case of client timeout
+				System.out.println("SERVER: Timout reached. EXITING");  
 				break;
 			}
 		}
+		// prints out efficiency things
 		System.out.println("Total useful bytes received: " + usefulBytes);
 		System.out.println("Total bytes received: " + totalBytes);
 		System.out.println("Efficiency: " + (usefulBytes * 100 / totalBytes) + "%");
