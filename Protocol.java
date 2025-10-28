@@ -150,7 +150,8 @@ public class Protocol {
 	 * This method receives the current Ack segment (ackSeg) from the server 
 	 * See coursework specification for full details.
 	 */
-	public boolean receiveAck() throws SocketTimeoutException { 
+	public boolean receiveAck() throws SocketTimeoutException {  // throws SocketTimeoutException for startTimeoutWithRetransmission method
+		// ripped from Server.java
 		Segment ackSeg = new Segment(); 
 		byte[] buf = new byte[Protocol.MAX_Segment_SIZE]; //prepare the buffer to have the max segment size
 		try{
@@ -166,12 +167,13 @@ public class Protocol {
 				if (ackSeg.getSeqNum() == instance.dataSeg.getSeqNum()) {
 					System.out.println("CLIENT:RECEIVE:ACK[SEQ#" + ackSeg.getSeqNum() + "]");
 					System.out.println("**********************************************************************");
-					// instance.sentReadings += instance.dataSeg.getPayLoad().split(";").length;
+					// instance.sentReadings += instance.dataSeg.getPayLoad().split(";").length; 
+					// n being number of readings in the payload, whilst making sure the payload is not null or empty
 					int n = instance.dataSeg.getPayLoad() == null || instance.dataSeg.getPayLoad().isEmpty() ? 0 : instance.dataSeg.getPayLoad().split(";").length;
 					instance.sentReadings += n;
 					// System.out.println("sentReadings: " + instance.sentReadings);
 					instance.ackSeg = ackSeg;
-					if (instance.sentReadings >= instance.fileTotalReadings) {
+					if (instance.sentReadings >= instance.fileTotalReadings) {  // all readings in csv sent
 						System.out.println("Total segments:" + instance.totalSegments);
 						System.exit(0);
 						return true;
@@ -200,28 +202,28 @@ public class Protocol {
 	 */
 	public void startTimeoutWithRetransmission() {
 		try{
-			instance.socket.setSoTimeout(instance.timeout);
+			instance.socket.setSoTimeout(instance.timeout);  // sets socket timeout to instance.timeout initialised below
 		}catch (SocketException e) {
 			System.out.println("Error: " + e);
 		}
 		while (true) {
 			try {
 				boolean matched = receiveAck();
-				if (matched) {
-					instance.currRetry = 0;
+				if (matched) {  // if received ack from server
+					instance.currRetry = 0;  // reset retries for next data segment
 					break;
 				}
-			} catch (SocketTimeoutException ste) {
+			} catch (SocketTimeoutException ste) {  // if no ack received from server before timeout
 				instance.currRetry += 1;
-				if (instance.currRetry > instance.maxRetries) {
+				if (instance.currRetry > instance.maxRetries) {  // if current retry exceeds max retries
 					System.out.println("ERROR: maximum retransmissions (" + instance.maxRetries +
 									") reached for seq#" + instance.dataSeg.getSeqNum() + ". Terminating.");
-					System.exit(1);
-				}
+					System.exit(1);  // exits program and prints status message
+				}  // else
 				System.out.println("CLIENT:TIMEOUT for SEQ#" + instance.dataSeg.getSeqNum() + ", Current Retry: " + instance.currRetry + "/" + instance.maxRetries + "");
 				System.out.println("CLIENT:Send:DATA[SEQ#" + instance.dataSeg.getSeqNum() + "](size:" + instance.dataSeg.getPayLoad().length() + ",crc:" + instance.dataSeg.calculateChecksum() +",content:" + instance.dataSeg.getPayLoad() +")");
-				sendSegment(instance.dataSeg);
-				instance.totalSegments += 1;
+				sendSegment(instance.dataSeg);  // send same data segment again
+				instance.totalSegments += 1;  // increment total segments sent for total segments sent counter
 			}
 		}
 	}
