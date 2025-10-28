@@ -17,6 +17,12 @@ import java.io.ObjectInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+
 
 public class Protocol {
 
@@ -236,8 +242,94 @@ public class Protocol {
 	 * This method is used by the server to receive the Data segment in Lost Ack mode
 	 * See coursework specification for full details.
 	 */
-	public void receiveWithAckLoss(DatagramSocket serverSocket, float loss)  {
-		System.exit(0);
+	public void receiveWithAckLoss(DatagramSocket serverSocket, float loss) throws IOException{
+		byte[] buf = new byte[Protocol.MAX_Segment_SIZE];
+		
+		//creat a temporary list to store the readings
+		List<String> receivedLines = new ArrayList<>();
+
+		//track the number of the correctly received readings
+		int readingCount= 0;
+		
+		int totalReceived = 0;
+
+		int sqNo = 0;
+
+		// while still receiving Data segments  
+		while (true) {
+
+			DatagramPacket incomingPacket = new DatagramPacket(buf, buf.length);
+			serverSocket.receive(incomingPacket);// receive from the client  
+
+			sqNo = ((readingCount / maxPatchSize) + 1) % 2;
+			System.out.println("Expected SEQ#:" + sqNo);
+		
+			Segment serverDataSeg = new Segment(); 
+			byte[] data = incomingPacket.getData();
+			ByteArrayInputStream in = new ByteArrayInputStream(data);
+			ObjectInputStream is = new ObjectInputStream(in);
+
+			// read and then print the content of the segment
+			try {
+				serverDataSeg = (Segment) is.readObject(); 
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+
+
+			System.out.println("SERVER: Receive: DATA [SEQ#"+ serverDataSeg.getSeqNum()+ "]("+"size:"+serverDataSeg.getSize()+", crc: "+serverDataSeg.getChecksum()+
+					", content:"  + serverDataSeg.getPayLoad()+")");
+
+			// calculate the checksum
+			long x = serverDataSeg.calculateChecksum();
+
+			// if the calculated checksum is same as that of received checksum then send the corresponding ack
+			if (serverDataSeg.getType() == SegmentType.Data && x == serverDataSeg.getChecksum()) {
+				System.out.println("SERVER: Calculated checksum is " + x + "  VALID");
+				InetAddress iPAddress = incomingPacket.getAddress();
+				int port = incomingPacket.getPort();
+
+				String[] lines = serverDataSeg.getPayLoad().split(";");
+
+				if (serverDataSeg.getSeqNum() != sqNo) {
+					System.out.println("SERVER: Duplicate DATA Detected");
+					System.out.println("*************************** "); 
+					totalReceived += lines.length;
+				} else {
+					// write the payload of the data segment to the temporary list 
+					readingCount += lines.length;
+					System.out.println("writing payload to list.......................................................");
+					receivedLines.add("Segment ["+ serverDataSeg.getSeqNum() + "] has "+ lines.length + " Readings");
+					receivedLines.addAll(Arrays.asList(lines));
+					receivedLines.add("");
+				}
+				
+
+				if (!isLost(loss)) {
+					Server.sendAck(serverSocket, iPAddress, port, serverDataSeg.getSeqNum());
+					//update the number of correctly received readings
+				} else {
+					System.out.println("SERVER: Simulating ACK loss. ACK[SEQ#" + serverDataSeg.getSeqNum() + "] is lost.");
+				}
+				
+				
+			
+			// if the calculated checksum is not the same as that of received checksum, then do not send any ack
+			} else if (serverDataSeg.getType() == SegmentType.Data&& x != serverDataSeg.getChecksum()) {
+				System.out.println("SERVER: Calculated checksum is " + x + "  INVALID");
+				System.out.println("SERVER: Not sending any ACK ");
+				System.out.println("*************************** "); 
+			}
+			
+			//if all readings are received, then write the readings to the file
+			if (Protocol.instance.getOutputFileName() != null && readingCount >= Protocol.instance.getFileTotalReadings()) {
+				System.out.println("All readings received. Writing to file..."); 
+				Server.writeReadingsToFile(receivedLines, Protocol.instance.getOutputFileName());
+				break;
+			}
+		}
+
+		serverSocket.close();
 	}
 
 
