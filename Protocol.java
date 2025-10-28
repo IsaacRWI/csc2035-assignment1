@@ -74,15 +74,15 @@ public class Protocol {
 	 */
 	public void sendMetadata()   { 
 		try{
-			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+			BufferedReader reader = new BufferedReader(new FileReader(inputFile));  
 			String line;
-			while((line = reader.readLine()) != null) {
-				fileTotalReadings++;
+			while((line = reader.readLine()) != null) {  // if the line in the csv is not null 
+				fileTotalReadings++;  // increment fileTotalReadings by 1
 			}
-			String payloadString = new String(fileTotalReadings+","+outputFileName+","+maxPatchSize);
-			Segment metaSeg = new Segment(0, SegmentType.Meta, payloadString, payloadString.length());  
+			String payloadString = new String(fileTotalReadings+","+outputFileName+","+maxPatchSize);  // creates payload string
+			Segment metaSeg = new Segment(0, SegmentType.Meta, payloadString, payloadString.length());  // creates new segment for the metadata
 
-			sendSegment(metaSeg);
+			sendSegment(metaSeg);  // sends metadata segment using the sendSegment method below
 
 			System.out.println("CLIENT:META[SEQ#" + metaSeg.getSeqNum() + "](Number of readings:" + instance.getFileTotalReadings() + ",filename:" + instance.getOutputFileName()  + ",patchSize:" + instance.getMaxPatchSize() + ")");
 			
@@ -93,6 +93,7 @@ public class Protocol {
 		}
 	} 
 
+	// helper method to simplify sending segments
 	public void sendSegment(Segment segment) {
 		try {
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -111,33 +112,33 @@ public class Protocol {
 	public void readAndSend() {
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-			for (int i = 0; i < sentReadings; i++) {
+			for (int i = 0; i < sentReadings; i++) {  // skips the readings that have already been sent
 				reader.readLine();
 			}
-			String payLoadString = "";
-			int sqNo = 0;
-			if (instance.maxPatchSize > 1) {
-				for (int i = 0; i < maxPatchSize; i++) {
+			String payLoadString = "";  // initializes payload string
+			int sqNo = 0;  // initializes sequence number
+			if (instance.maxPatchSize > 1) {  // if patch size is greater than 1 
+				for (int i = 0; i < maxPatchSize; i++) {  // read patch size number of lines from the csv
 					String line = reader.readLine();
-					if (line != null) {
-						payLoadString += line + ";";
+					if (line != null) {  // if the read line is not null 
+						payLoadString += line + ";";  // add the line to the payload with a semicolon behind it 
 					} else {
-						break;
+						break;  // break out of the loop if the line is null  ie end of file reached
 					}
 				}
-				payLoadString = payLoadString.substring(0, payLoadString.length() - 1);
-				// sentReadings += maxPatchSize;
-				sqNo = ((sentReadings / maxPatchSize) + 1) % 2;
-			} else {				
-				payLoadString = reader.readLine();
+				payLoadString = payLoadString.substring(0, payLoadString.length() - 1);  // remove the last semicolon from payload string
+				// sentReadings += maxPatchSize;    // incrementing sentReadings moved to receiveAck method and only increments when ack for segment is received instead of sent
+				sqNo = ((sentReadings / maxPatchSize) + 1) % 2;  // cycles sequence number between 0 and 1 starting on 1 
+			} else {  // if patch size is 1 				
+				payLoadString = reader.readLine();  // reads a single line from the csv and sets it as the payload 
 				// sentReadings += 1;
-				sqNo = (sentReadings + 1) % 2;
+				sqNo = (sentReadings + 1) % 2; // same thing cycles sequence number between 0 and 1 starting on 1
 			}
-				dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());
-				sendSegment(dataSeg);
-				totalSegments++;
+				dataSeg = new Segment(sqNo, SegmentType.Data, payLoadString, payLoadString.length());  // creates the data segment with the payload and sequence number
+				sendSegment(dataSeg);  // sends data segment with helper method
+				totalSegments++;  // increment total segments sent
 				System.out.println("CLIENT:Send:DATA[SEQ#" + sqNo + "](size:" + payLoadString.length() + ",crc:" + dataSeg.calculateChecksum() +",content:" + payLoadString +")");
-				payLoadString = "";
+				payLoadString = "";  // empty payload string for next payload
 				reader.close();
 		} catch (IOException e) {
 			System.out.println("Error: " + e);
