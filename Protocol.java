@@ -152,6 +152,7 @@ public class Protocol {
 	 */
 	public boolean receiveAck() throws SocketTimeoutException {  // throws SocketTimeoutException for startTimeoutWithRetransmission method
 		// ripped from Server.java
+		
 		Segment ackSeg = new Segment(); 
 		byte[] buf = new byte[Protocol.MAX_Segment_SIZE]; //prepare the buffer to have the max segment size
 		try{
@@ -169,7 +170,7 @@ public class Protocol {
 					System.out.println("**********************************************************************");
 					// instance.sentReadings += instance.dataSeg.getPayLoad().split(";").length; 
 					// n being number of readings in the payload, whilst making sure the payload is not null or empty
-					int n = instance.dataSeg.getPayLoad() == null || instance.dataSeg.getPayLoad().isEmpty() ? 0 : instance.dataSeg.getPayLoad().split(";").length;
+					int n = instance.dataSeg.getPayLoad() == null || instance.dataSeg.getPayLoad().isEmpty() ? 0 : instance.dataSeg.getPayLoad().split(";").length;  // it needs to be this way or the ide gets mad
 					instance.sentReadings += n;
 					// System.out.println("sentReadings: " + instance.sentReadings);
 					instance.ackSeg = ackSeg;
@@ -234,6 +235,7 @@ public class Protocol {
 	 */
 	public void receiveWithAckLoss(DatagramSocket serverSocket, float loss) throws IOException{
 		// ripped from receiveNormal in Server.java
+
 		byte[] buf = new byte[Protocol.MAX_Segment_SIZE];
 		
 		//creat a temporary list to store the readings
